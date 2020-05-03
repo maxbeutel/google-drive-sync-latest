@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"time"
 
 	"golang.org/x/net/context"
@@ -19,13 +20,13 @@ import (
 // DownloadFile downloads the content of a given file object
 func DownloadFile(d *drive.Service, t http.RoundTripper, f *drive.File) (string, error) {
 	// t parameter should use an oauth.Transport
-	downloadUrl := f.WebContentLink
-	if downloadUrl == "" {
-		// If there is no downloadUrl, there is no body
+	downloadURL := f.WebContentLink
+	if downloadURL == "" {
+		// If there is no downloadURL, there is no body
 		fmt.Printf("An error occurred: File is not downloadable")
 		return "", nil
 	}
-	req, err := http.NewRequest("GET", downloadUrl, nil)
+	req, err := http.NewRequest("GET", downloadURL, nil)
 	if err != nil {
 		fmt.Printf("An error occurred: %v\n", err)
 		return "", err
@@ -167,7 +168,9 @@ func main() {
 	for _, f := range files.Files {
 		log.Println("Found file", f.Name, f.Id, f.CreatedTime)
 
-		outName := targetDir + "/" + f.Name
+		outName := targetDir + "/" + cleanFilename(f.Name)
+
+		log.Println(">> Outfile name is", outName)
 
 		if fileExists(outName) {
 			log.Println(">> File already exists", outName)
@@ -221,4 +224,10 @@ func fileExists(filename string) bool {
 		return false
 	}
 	return !info.IsDir()
+}
+
+var re = regexp.MustCompile(`[^a-zA-Z0-9._-]+`)
+
+func cleanFilename(in string) string {
+	return re.ReplaceAllString(in, "_")
 }
